@@ -1,0 +1,15 @@
+#Git
+.git
+.gitignore
+
+#Docker
+.docker
+
+#Python
+app/__python__/
+app/*/__python__/
+app/*/*/__python__/
+app/*/*/*/__python__/
+.env/
+.ven/
+venv/
