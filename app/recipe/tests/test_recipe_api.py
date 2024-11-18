@@ -13,9 +13,17 @@ from rest_framework.test import APIClient
 
 from core.models import Recipe
 
-from recipe.serializers import RecipeSerializer
+from recipe.serializers import (
+    RecipeSerializer,
+    RecipeDetailSerializer,
+)
 
 RECIPES_URL = reverse('recipe:recipe-list')
+
+
+def detail_url(recipe_id):
+    """Create and return a recipe detail URL."""
+    return reverse('recipe:recipe-detail', args=[recipe_id])
 
 
 def create_recipe(user, **params):
@@ -79,7 +87,7 @@ class PrivateRecipeAPITests(TestCase):
             'password123',
         )
         create_recipe(user=other_user)
-        create_recipe(use=self.user)
+        create_recipe(user=self.user)
 
         res = self.client.get(RECIPES_URL)
 
@@ -88,3 +96,33 @@ class PrivateRecipeAPITests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, serializer.data)
 
+    def test_get_recipe_detail(self):
+        """Test get recipe detail."""
+        recipe = create_recipe(user=self.user)
+
+        url = detail_url(recipe.id)
+        res = self.client.get(url)
+
+        serializer = RecipeDetailSerializer(recipe)
+        self.assertEqual(res.data, serializer.data)
+
+
+    def test_create_recipe(self):
+        """Test creating a recipe."""
+        payload={
+            'title': 'Sample recipe',
+            'time_minutes': 30,
+            'price': Decimal('5.99'),
+        }
+        res = self.client.post(RECIPES_URL, payload)
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+        # we retrieve a specific recipe through the id
+        recipe = Recipe.objects.get(id=res.data['id'])
+
+        # k = name
+        # v = value
+        for k, v in payload.items():
+            self.assertEqual(getattr(recipe, k), v) #getattr = get attribute (python function)
+
+        self.assertEqual(recipe.user, self.user)
