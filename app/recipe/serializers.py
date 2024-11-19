@@ -36,35 +36,19 @@ class RecipeDetailSerializer(RecipeSerializer):
 
     def _get_or_create_tags(self, tags, recipe):
         """Handle getting or creating tags as needed"""
-
-    def create(self, validated_data):
-        """Create a recipe."""
-
-        # if tags exist in validated_data
-        # remove & assign them to new var
-        # called tags. if it doesn't exist
-        # default to the []
-        tags = validated_data.pop('tags', [])
-        recipe = Recipe.objects.create(**validated_data)
-
-        # to get the authenticated user in a
-        # serializer & not a view, we need to
-        # use this self.context['request']
-        # the context is passed to the serializer
-        # by the view
         auth_user = self.context['request'].user
-
-        # loop through the tags, get the value if
-        # it exists or create a new one if it doesn't
-        # (to avoid duplicate tags)
         for tag in tags:
             tag_obj, created = Tag.objects.get_or_create(
                 user=auth_user,
-                **tag, # reason for **: we want to take all the values passed into the tag
-                       # future-proofing the code: in case we add other variables beside name
+                **tag,
             )
             recipe.tags.add(tag_obj)
 
+    def create(self, validated_data):
+        """Create a recipe."""
+        tags = validated_data.pop('tags', [])
+        recipe = Recipe.objects.create(**validated_data)
+        self._get_or_create_tags(tags, recipe)
         return recipe
 
     def update(self, instance, validated_data):
@@ -73,7 +57,7 @@ class RecipeDetailSerializer(RecipeSerializer):
 
         if tags is not None:
             instance.tags.clear()
-            self.get_or_create_tags(tags, instance)
+            self._get_or_create_tags(tags, instance)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)

@@ -284,7 +284,7 @@ class PrivateRecipeAPITests(TestCase):
         recipe = create_recipe(user=self.user)
         recipe.tags.add(tag_breakfast)
 
-        tag_lunch = Tag.objects.Create(user=self.user, name='Lunch')
+        tag_lunch = Tag.objects.create(user=self.user, name='Lunch')
         payload = {'tags':[{'name':'Lunch'}]}
         url = detail_url(recipe.id)
         res=self.client.patch(url, payload, format='json')
