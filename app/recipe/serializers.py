@@ -8,12 +8,23 @@ from core.models import (
     Tag,
 )
 
+
+class TagSerializer(serializers.ModelSerializer):
+    """Serializer for tags."""
+
+    class Meta:
+        model = Tag
+        fields = ['id', 'name']
+        read_only_fields = ['id']
+
+
 class RecipeSerializer(serializers.ModelSerializer):
-    """Serializers for recipes."""
+    """Serializer for recipes."""
+    tags = TagSerializer(many=True, required=False)
 
     class Meta:
         model = Recipe
-        fields = ['id', 'title', 'time_minutes', 'price', 'link']
+        fields = ['id', 'title', 'time_minutes', 'price', 'link', 'tags']
         read_only_fields = ['id']
 
 
@@ -23,12 +34,49 @@ class RecipeDetailSerializer(RecipeSerializer):
     class Meta(RecipeSerializer.Meta):
         fields = RecipeSerializer.Meta.fields + ['description']
 
+    def _get_or_create_tags(self, tags, recipe):
+        """Handle getting or creating tags as needed"""
 
-class TagSerializer(serializers.ModelSerializer):
-    """Serializer for tags."""
+    def create(self, validated_data):
+        """Create a recipe."""
 
-    class Meta():
-        model = Tag
-        fields = ['id', 'name']
-        read_only_fields = ['id']
+        # if tags exist in validated_data
+        # remove & assign them to new var
+        # called tags. if it doesn't exist
+        # default to the []
+        tags = validated_data.pop('tags', [])
+        recipe = Recipe.objects.create(**validated_data)
 
+        # to get the authenticated user in a
+        # serializer & not a view, we need to
+        # use this self.context['request']
+        # the context is passed to the serializer
+        # by the view
+        auth_user = self.context['request'].user
+
+        # loop through the tags, get the value if
+        # it exists or create a new one if it doesn't
+        # (to avoid duplicate tags)
+        for tag in tags:
+            tag_obj, created = Tag.objects.get_or_create(
+                user=auth_user,
+                **tag, # reason for **: we want to take all the values passed into the tag
+                       # future-proofing the code: in case we add other variables beside name
+            )
+            recipe.tags.add(tag_obj)
+
+        return recipe
+
+    def update(self, instance, validated_data):
+        """Update recipe"""
+        tags = validated_data.pop('tags', [])
+
+        if tags is not None:
+            instance.tags.clear()
+            self.get_or_create_tags(tags, instance)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
