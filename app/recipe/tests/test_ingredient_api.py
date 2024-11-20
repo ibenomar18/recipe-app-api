@@ -90,7 +90,7 @@ class PrivateIngredientsApiTests(TestCase):
         """Test deleting an ingredient."""
         ingredient = Ingredient.objects.create(
             user=self.user,
-            name= '')
+            name= 'Lettuce')
 
         url = detail_url(ingredient.id)
         res = self.client.delete(url)
