@@ -7,7 +7,6 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
-
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -48,8 +47,8 @@ def create_user(**params):
     """Create and return a new user."""
     return get_user_model().objects.create_user(**params)
 
-class PublicRecipeAPITests(TestCase):
-    """Test authenticated API requests."""
+class PublicRecipeApiTests(TestCase):
+    """Test unauthenticated API requests."""
 
     def setUp(self):
         self.client = APIClient()
@@ -60,7 +59,7 @@ class PublicRecipeAPITests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
-class PrivateRecipeAPITests(TestCase):
+class PrivateRecipeApiTests(TestCase):
     """Test authenticated API requests."""
 
     def setUp(self):
@@ -111,7 +110,6 @@ class PrivateRecipeAPITests(TestCase):
         serializer = RecipeDetailSerializer(recipe)
         self.assertEqual(res.data, serializer.data)
 
-
     def test_create_recipe(self):
         """Test creating a recipe."""
         payload={
@@ -154,10 +152,10 @@ class PrivateRecipeAPITests(TestCase):
     def test_full_update(self):
         """Test full update of recipe."""
         recipe = create_recipe(
-            user = self.user,
-            title = 'Sample recipe title',
-            link  = 'https://example.com/recipe.pdf',
-            description = 'Sample recipe description',
+            user=self.user,
+            title='Sample recipe title',
+            link='https://example.com/recipe.pdf',
+            description='Sample recipe description',
         )
 
         payload = {
@@ -312,6 +310,7 @@ class PrivateRecipeAPITests(TestCase):
         payload = {
             'title': 'Cauliflower Tacos',
             'time_minutes': 60,
+            'price': Decimal('4.30'),
             'ingredients': [{'name':'Cauliflower'}, {'name':'Salt'}],
         }
         res = self.client.post(RECIPES_URL, payload, format='json')
@@ -330,13 +329,13 @@ class PrivateRecipeAPITests(TestCase):
             self.assertTrue(exists)
 
     def test_create_recipe_with_existing_ingredient(self):
-        """Test creating a recipe with existing ingredient."""
+        """Test creating a new recipe with existing ingredient."""
         ingredient = Ingredient.objects.create(user=self.user, name='Lemon')
         payload = {
             'title': 'Vietnamese Soup',
             'time_minutes': 25,
             'price': '2.55',
-            'ingredients': [{'name':'Lemon'}, {'name':'Fish Sauce'}],
+            'ingredients': [{'name': 'Lemon'}, {'name': 'Fish Sauce'}],
         }
         res = self.client.post(RECIPES_URL, payload, format='json')
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
@@ -350,6 +349,6 @@ class PrivateRecipeAPITests(TestCase):
         for ingredient in payload['ingredients']:
             exists = recipe.ingredients.filter(
                 name=ingredient['name'],
-                user = self.user,
+                user=self.user,
             ).exists()
             self.assertTrue(exists)
