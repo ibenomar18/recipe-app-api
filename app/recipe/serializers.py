@@ -49,6 +49,7 @@ class RecipeDetailSerializer(RecipeSerializer):
         tags = validated_data.pop('tags', [])
         recipe = Recipe.objects.create(**validated_data)
         self._get_or_create_tags(tags, recipe)
+
         return recipe
 
     def update(self, instance, validated_data):
